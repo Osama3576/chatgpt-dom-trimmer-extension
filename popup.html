@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+    <title>ChatGPT DOM Trimmer</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="topbar">
+        <div>
+          <h1>ChatGPT DOM Trimmer</h1>
+          <p class="subtitle">Trim older turns from the page DOM.</p>
+        </div>
+        <label class="switch" title="Enable or disable live trimming">
+          <input id="enabled" type="checkbox" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <section class="card">
+        <label class="field-label" for="keepCount"
+          >Keep last assistant replies</label
+        >
+        <div class="row">
+          <input
+            id="keepCount"
+            type="number"
+            min="1"
+            max="50"
+            step="1"
+          />
+          <button id="applyBtn" class="primary">Apply</button>
+        </div>
+        <div class="quick-row">
+          <button class="ghost quick" data-value="2">2</button>
+          <button class="ghost quick" data-value="4">4</button>
+          <button class="ghost quick" data-value="6">6</button>
+          <button class="ghost quick" data-value="10">10</button>
+        </div>
+      </section>
+
+      <section class="card compact">
+        <label class="checkbox-row">
+          <input id="preservePrompt" type="checkbox" />
+          <span
+            >Keep the matching user prompts with the last
+            replies</span
+          >
+        </label>
+      </section>
+
+      <section class="card compact info-card">
+        <p id="statusText" class="status">Ready.</p>
+        <p class="muted">
+          Older trimmed turns are removed from the current page view.
+          Reload the chat to restore everything.
+        </p>
+      </section>
+
+      <div class="footer-row">
+        <button id="reloadBtn" class="ghost wide">
+          Reload current chat
+        </button>
+      </div>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
