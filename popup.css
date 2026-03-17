@@ -67,6 +67,12 @@ h1 {
   font-weight: 600;
 }
 
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .row {
   display: flex;
   gap: 10px;
@@ -112,11 +118,7 @@ button:hover {
 
 .primary {
   white-space: nowrap;
-  background: linear-gradient(
-    180deg,
-    var(--accent) 0%,
-    var(--accent-2) 100%
-  );
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 100%);
   color: white;
 }
 

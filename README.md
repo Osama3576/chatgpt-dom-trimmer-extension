@@ -1,6 +1,6 @@
 # ChatGPT DOM Trimmer
 
-A small Chrome extension that keeps only the latest **N assistant replies** in the ChatGPT web UI. Older turns are removed from the current page DOM so very long chats stay lighter and less laggy.
+A small Chrome extension that keeps only the latest **N assistant replies** in the ChatGPT web UI. Older turns are removed from the current page DOM so very long chats stay lighter and more responsive.
 
 ## What it does
 
@@ -13,8 +13,8 @@ A small Chrome extension that keeps only the latest **N assistant replies** in t
 ## Important behavior
 
 - Older turns are removed from the **current loaded page view**.
-- To restore the full chat, reload the conversation.
-- This improves DOM/render weight, but it does not change what ChatGPT has stored on the server.
+- Reload the conversation to restore the full chat.
+- This improves DOM and rendering weight, but it does not change anything stored by ChatGPT on the server.
 
 ## Install
 

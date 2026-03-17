@@ -21,7 +21,7 @@
     queuedBadge: null,
   };
 
-  // Debounce trimming so we do not run heavy DOM work too often.
+  // Debounce trimming so the script does not perform heavy DOM work too often.
   function debounceApply(delay = 180) {
     clearTimeout(STATE.applyTimer);
     STATE.applyTimer = setTimeout(() => {
@@ -31,7 +31,7 @@
     }, delay);
   }
 
-  // Create the floating badge only once.
+  // Create the floating badge once and reuse it.
   function createBadge() {
     let badge = document.getElementById('chatgpt-dom-trimmer-badge');
     if (badge) return badge;
@@ -59,15 +59,13 @@
     return badge;
   }
 
-  // Hide the badge without removing the element.
+  // Hide the badge without removing the DOM element.
   function hideBadge(clearQueuedBadge = false) {
     clearTimeout(STATE.badgeTimer);
     STATE.badgeTimer = null;
 
     if (!STATE.badge) {
-      STATE.badge = document.getElementById(
-        'chatgpt-dom-trimmer-badge',
-      );
+      STATE.badge = document.getElementById('chatgpt-dom-trimmer-badge');
     }
 
     if (STATE.badge) {
@@ -79,7 +77,7 @@
     }
   }
 
-  // Render the badge immediately.
+  // Render the badge immediately with the provided text.
   function renderBadge(text) {
     STATE.badge = STATE.badge || createBadge();
     STATE.badge.textContent = text;
@@ -87,7 +85,7 @@
   }
 
   // Show a badge for a limited duration.
-  // If another badge is already visible, keep only the latest queued message.
+  // If another badge is already visible, only keep the latest queued message.
   function showTemporaryBadge(text, duration = 3000) {
     if (!STATE.settings.showBadge) return;
 
@@ -113,7 +111,7 @@
   // Show the startup badge after a full page load.
   function showStartupBadge() {
     if (!STATE.settings.enabled || !STATE.settings.showBadge) return;
-    showTemporaryBadge('Chat Trimmer is Working', 3000);
+    showTemporaryBadge('Trimmer is working', 3000);
   }
 
   // Fully remove the badge if the extension is disabled.
@@ -122,32 +120,27 @@
     STATE.badgeTimer = null;
     STATE.queuedBadge = null;
 
-    const badge = document.getElementById(
-      'chatgpt-dom-trimmer-badge',
-    );
+    const badge = document.getElementById('chatgpt-dom-trimmer-badge');
     if (badge) badge.remove();
 
     STATE.badge = null;
   }
 
-  // Load latest settings from extension storage.
+  // Load the latest settings from extension storage.
   async function loadSettings() {
     const stored = await chrome.storage.local.get(DEFAULT_SETTINGS);
     STATE.settings = { ...DEFAULT_SETTINGS, ...stored };
   }
 
-  // Try the main ChatGPT turn selector first, then fall back to role-based containers.
+  // Get conversation turn nodes from the current ChatGPT page.
+  // Prefer the main turn selector and fall back to role-based containers.
   function getTurnNodes() {
     const byArticle = [
-      ...document.querySelectorAll(
-        'article[data-testid^="conversation-turn-"]',
-      ),
+      ...document.querySelectorAll('article[data-testid^="conversation-turn-"]'),
     ];
     if (byArticle.length) return byArticle;
 
-    const roleContainers = [
-      ...document.querySelectorAll('[data-message-author-role]'),
-    ]
+    const roleContainers = [...document.querySelectorAll('[data-message-author-role]')]
       .map(node => node.closest('article, li, section, div'))
       .filter(Boolean);
 
@@ -166,26 +159,18 @@
 
   // Detect whether a turn belongs to the assistant or the user.
   function getRoleForTurn(turn, fallbackIndex) {
-    const directRole = turn.getAttribute?.(
-      'data-message-author-role',
-    );
+    const directRole = turn.getAttribute?.('data-message-author-role');
     if (directRole === 'assistant' || directRole === 'user') {
       return directRole;
     }
 
-    const nestedRoleNode = turn.querySelector?.(
-      '[data-message-author-role]',
-    );
-    const nestedRole = nestedRoleNode?.getAttribute?.(
-      'data-message-author-role',
-    );
+    const nestedRoleNode = turn.querySelector?.('[data-message-author-role]');
+    const nestedRole = nestedRoleNode?.getAttribute?.('data-message-author-role');
     if (nestedRole === 'assistant' || nestedRole === 'user') {
       return nestedRole;
     }
 
-    const srOnly = (
-      turn.querySelector?.('h6.sr-only')?.textContent || ''
-    ).toLowerCase();
+    const srOnly = (turn.querySelector?.('h6.sr-only')?.textContent || '').toLowerCase();
     if (srOnly.includes('chatgpt') || srOnly.includes('assistant')) {
       return 'assistant';
     }
@@ -203,7 +188,7 @@
     return fallbackIndex % 2 === 0 ? 'user' : 'assistant';
   }
 
-  // Calculate from which index old turns should be removed.
+  // Calculate the index from which old turns should be removed.
   function getCutoffIndex(turns, roles) {
     const assistantIndexes = [];
 
@@ -212,18 +197,14 @@
     }
 
     if (!assistantIndexes.length) return 0;
-    if (
-      assistantIndexes.length <= STATE.settings.keepAssistantReplies
-    ) {
+    if (assistantIndexes.length <= STATE.settings.keepAssistantReplies) {
       return 0;
     }
 
-    const keptAssistantIndexes = assistantIndexes.slice(
-      -STATE.settings.keepAssistantReplies,
-    );
+    const keptAssistantIndexes = assistantIndexes.slice(-STATE.settings.keepAssistantReplies);
     let cutoffIndex = keptAssistantIndexes[0];
 
-    // Optionally preserve the user prompt that belongs to the first kept assistant reply.
+    // Optionally preserve the matching user prompt for the first kept assistant reply.
     if (!STATE.settings.preservePrompt) return cutoffIndex;
 
     for (let i = cutoffIndex - 1; i >= 0; i -= 1) {
@@ -263,7 +244,7 @@
     if (removedNow <= 0) return;
 
     // Keep the text short and show it for 3 seconds.
-    showTemporaryBadge(`Trimmed Responses ${removedNow}`, 3000);
+    showTemporaryBadge(`Trimmed ${removedNow} turn(s)`, 3000);
   }
 
   // Main trimming routine.
@@ -280,9 +261,7 @@
       return { ok: true, removedCount: 0 };
     }
 
-    const roles = turns.map((turn, index) =>
-      getRoleForTurn(turn, index),
-    );
+    const roles = turns.map((turn, index) => getRoleForTurn(turn, index));
     const cutoffIndex = getCutoffIndex(turns, roles);
 
     if (cutoffIndex <= 0) {
@@ -300,12 +279,9 @@
     if (STATE.observer) return;
 
     STATE.observer = new MutationObserver(mutations => {
-      // Ignore badge-related mutations to avoid triggering ourselves.
+      // Ignore badge-related mutations to avoid triggering the observer with its own changes.
       const hasRelevantMutation = mutations.some(mutation => {
-        const nodes = [
-          ...mutation.addedNodes,
-          ...mutation.removedNodes,
-        ];
+        const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
 
         return nodes.some(node => {
           if (!(node instanceof HTMLElement)) return false;
@@ -326,7 +302,7 @@
     });
   }
 
-  // Watch route changes because ChatGPT navigation often happens without full reloads.
+  // Watch route changes because ChatGPT navigation often happens without a full reload.
   function startRouteWatcher() {
     if (STATE.routeTimer) return;
 
@@ -340,26 +316,21 @@
     }, 700);
   }
 
-  // Allow manual apply from popup or background scripts.
-  chrome.runtime.onMessage.addListener(
-    (message, _sender, sendResponse) => {
-      if (message?.type === 'CHATGPT_DOM_TRIMMER_APPLY') {
-        applyTrimming()
-          .then(result => sendResponse(result))
-          .catch(error => {
-            console.error(
-              '[ChatGPT DOM Trimmer] Manual apply failed:',
-              error,
-            );
-            sendResponse({ ok: false, error: String(error) });
-          });
+  // Allow manual apply requests from the popup.
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === 'CHATGPT_DOM_TRIMMER_APPLY') {
+      applyTrimming()
+        .then(result => sendResponse(result))
+        .catch(error => {
+          console.error('[ChatGPT DOM Trimmer] Manual apply failed:', error);
+          sendResponse({ ok: false, error: String(error) });
+        });
 
-        return true;
-      }
+      return true;
+    }
 
-      return false;
-    },
-  );
+    return false;
+  });
 
   // Re-apply trimming whenever extension settings change.
   chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -371,9 +342,7 @@
       'preservePrompt',
       'showBadge',
     ];
-    const hasRelevantChange = relevantKeys.some(
-      key => key in changes,
-    );
+    const hasRelevantChange = relevantKeys.some(key => key in changes);
     if (!hasRelevantChange) return;
 
     STATE.removedCount = 0;
@@ -381,7 +350,7 @@
     debounceApply(50);
   });
 
-  // Start everything once.
+  // Initialize the content script only once.
   async function init() {
     if (STATE.hasStarted) return;
     STATE.hasStarted = true;
